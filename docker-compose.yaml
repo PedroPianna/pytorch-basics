@@ -1,0 +1,11 @@
+version: "3.3"
+services:
+  pytorch-basics-image:
+    container_name: 'toch-basics'
+    build: .
+    runtime: nvidia
+    tty: true
+    ports:
+      - "8889:8889"
+    volumes:
+      - ./:/home/
