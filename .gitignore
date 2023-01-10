@@ -2,12 +2,9 @@
 __pycache__/
 *.py[cod]
 *$py.class
-cifar_net.pth
-resnet18_cifar.pth
-custom_net_cifar.pth
-efficientnet_b0_cifar.pth
 data/
 mlruns/
+models/
 nohup.out
 # C extensions
 *.so

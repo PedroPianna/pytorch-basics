@@ -1,11 +1,34 @@
 version: "3.3"
 services:
-  pytorch-basics-image:
-    container_name: 'toch-basics'
+
+  pytorch-develop:
+    container_name: 'torch-develop'
     build: .
     runtime: nvidia
     tty: true
-    ports:
-      - "8889:8889"
     volumes:
       - ./:/home/
+    profiles:
+      - develop
+
+  mlflow-training:
+    container_name: 'torch-mlflow'
+    build: .
+    runtime: nvidia
+    tty: true
+    command: "python3 mlflow-pipeline.py"
+    volumes:
+      - ./:/home/
+    profiles:
+      - mlflow
+
+  pytorch-training:
+    container_name: 'torch'
+    build: .
+    runtime: nvidia
+    tty: true
+    command: "python3 pipeline.py"
+    volumes:
+      - ./:/home/
+    profiles:
+      - torch

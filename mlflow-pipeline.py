@@ -1,7 +1,7 @@
 import torch
 import torchvision
 import torchvision.transforms as transforms
-from torchvision.models import resnet18 , ResNet18_Weights, efficientnet_b0, EfficientNet_B0_Weights
+from torchvision.models import convnext_large, ConvNeXt_Large_Weights
 from net import Net
 import mlflow
 
@@ -36,10 +36,14 @@ classes = ('plane', 'car', 'bird', 'cat',
 
 # net = resnet18(ResNet18_Weights.auto)
 # net = efficientnet_b0(EfficientNet_B0_Weights.auto)
-net = Net()
+# net = densenet121(DenseNet121_Weights.auto)
+# net = vgg11(VGG11_Weights.auto)
+# net = Net()
+# net = convnext_base(ConvNeXt_Base_Weights.auto)
+net = convnext_large(ConvNeXt_Large_Weights.auto)
 net.to(device)
 
-epochs = 50
+epochs = 75
 lr = 0.0001
 
 # loss and optimizer 
@@ -52,14 +56,13 @@ optimizer = optim.SGD(net.parameters(), lr=lr, momentum=0.9)
 
 # start mlflow run
 mlflow.set_experiment("CIFAR10")
-with mlflow.start_run(run_name='custom_net') as run:
+with mlflow.start_run(run_name='convnet_large') as run:
     
     mlflow.log_param("epochs", epochs)
     mlflow.log_param('learning_rate', lr)
     mlflow.log_param("batch_size", batch_size)
     mlflow.log_param("optimizer", optimizer)
     mlflow.log_param("criterion", criterion)
-    mlflow.log_param("classes", classes)
 
     # prepare to count predictions for each class
     correct_pred = {classname: 0 for classname in classes}
@@ -104,7 +107,7 @@ with mlflow.start_run(run_name='custom_net') as run:
         mlflow.log_metric('test_accuracy', 100 * round(correct / total, ndigits=4))
 
         # saving model at each epoch
-        PATH = './custom_net_cifar.pth'
+        PATH = 'models/convnet_large_cifar10.pth'
         torch.save(net.state_dict(), PATH)
 
 print('Finished Training')
