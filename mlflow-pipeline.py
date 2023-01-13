@@ -1,9 +1,10 @@
 import torch
 import torchvision
 import torchvision.transforms as transforms
-from torchvision.models import convnext_large, ConvNeXt_Large_Weights
+from torchvision.models import resnet18, ResNet18_Weights
 from net import Net
 import mlflow
+import utils
 
 # connecting to mlflow server
 mlflow.set_tracking_uri('file:///home/mlruns')
@@ -34,13 +35,13 @@ testloader = torch.utils.data.DataLoader(testset, batch_size=batch_size,
 classes = ('plane', 'car', 'bird', 'cat',
            'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
 
-# net = resnet18(ResNet18_Weights.auto)
+net = resnet18(ResNet18_Weights.auto)
 # net = efficientnet_b0(EfficientNet_B0_Weights.auto)
 # net = densenet121(DenseNet121_Weights.auto)
 # net = vgg11(VGG11_Weights.auto)
 # net = Net()
 # net = convnext_base(ConvNeXt_Base_Weights.auto)
-net = convnext_large(ConvNeXt_Large_Weights.auto)
+# net = convnext_large(ConvNeXt_Large_Weights.auto)
 net.to(device)
 
 epochs = 75
@@ -56,7 +57,7 @@ optimizer = optim.SGD(net.parameters(), lr=lr, momentum=0.9)
 
 # start mlflow run
 mlflow.set_experiment("CIFAR10")
-with mlflow.start_run(run_name='convnet_large') as run:
+with mlflow.start_run(run_name='resnet18') as run:
     
     mlflow.log_param("epochs", epochs)
     mlflow.log_param('learning_rate', lr)
@@ -91,20 +92,11 @@ with mlflow.start_run(run_name='convnet_large') as run:
                 print(f'[{epoch + 1}, {i + 1:5d}] loss: {running_loss / 2000:.3f}')
                 running_loss = 0.0
             
-        correct = 0
-        total = 0
-        # since we're not training, we don't need to calculate the gradients for our outputs
-        with torch.no_grad():
-            for data in testloader:
-                images, labels = data[0].to(device), data[1].to(device)
-                # calculate outputs by running images through the network
-                outputs = net(images)
-                # the class with the highest energy is what we choose as prediction
-                _, predicted = torch.max(outputs.data, 1)
-                total += labels.size(0)
-                correct += (predicted == labels).sum().item()
-        print(f"Accuracy: {100 * round(correct / total, ndigits=4)}%")
-        mlflow.log_metric('test_accuracy', 100 * round(correct / total, ndigits=4))
+        
+        loss, accuracy = utils.validation(net, testloader, criterion)
+
+        print(f"Accuracy: {accuracy}%")
+        mlflow.log_metric('test_accuracy', accuracy)
 
         # saving model at each epoch
         PATH = 'models/convnet_large_cifar10.pth'
