@@ -6,8 +6,8 @@ from net import Net
 import mlflow
 import utils
 
-# connecting to mlflow server
-mlflow.set_tracking_uri('file:///home/mlruns')
+PATH = 'models/convnet_large_cifar10.pth'
+MLRUNS_FOLDER = 'file:///home/mlruns'
 
 # check of GPU acceleration as available
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
@@ -35,11 +35,11 @@ testloader = torch.utils.data.DataLoader(testset, batch_size=batch_size,
 classes = ('plane', 'car', 'bird', 'cat',
            'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
 
-net = resnet18(ResNet18_Weights.auto)
+# net = resnet18(ResNet18_Weights.auto)
 # net = efficientnet_b0(EfficientNet_B0_Weights.auto)
 # net = densenet121(DenseNet121_Weights.auto)
 # net = vgg11(VGG11_Weights.auto)
-# net = Net()
+net = Net()
 # net = convnext_base(ConvNeXt_Base_Weights.auto)
 # net = convnext_large(ConvNeXt_Large_Weights.auto)
 net.to(device)
@@ -54,11 +54,11 @@ import torch.nn as nn
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.SGD(net.parameters(), lr=lr, momentum=0.9)
 
-
+# connecting to mlflow server
+mlflow.set_tracking_uri(MLRUNS_FOLDER)
 # start mlflow run
 mlflow.set_experiment("CIFAR10")
 with mlflow.start_run(run_name='resnet18') as run:
-    
     mlflow.log_param("epochs", epochs)
     mlflow.log_param('learning_rate', lr)
     mlflow.log_param("batch_size", batch_size)
@@ -72,7 +72,6 @@ with mlflow.start_run(run_name='resnet18') as run:
     # train loop for the CNN 
     for epoch in range(epochs):  # loop over the dataset multiple times
 
-        running_loss = 0.0
         for i, data in enumerate(trainloader, 0):
             # get the inputs; data is a list of [inputs, labels]
             inputs, labels = data[0].to(device), data[1].to(device)
@@ -85,24 +84,25 @@ with mlflow.start_run(run_name='resnet18') as run:
             loss = criterion(outputs, labels)
             loss.backward()
             optimizer.step()
-
-            # print statistics
-            running_loss += loss.item()
-            if i % 2000 == 1999:    # print every 2000 mini-batches
-                print(f'[{epoch + 1}, {i + 1:5d}] loss: {running_loss / 2000:.3f}')
-                running_loss = 0.0
             
-        
-        loss, accuracy = utils.validation(net, testloader, criterion)
-
-        print(f"Accuracy: {accuracy}%")
-        mlflow.log_metric('test_accuracy', accuracy)
+        train_loss, train_accuracy = utils.validation(net, trainloader, criterion)
+        test_loss, test_accuracy = utils.validation(net, testloader, criterion)
 
         # saving model at each epoch
-        PATH = 'models/convnet_large_cifar10.pth'
         torch.save(net.state_dict(), PATH)
+        mlflow.pytorch.log_model(net,'file:/home/mlruns')
+
+        metrics = {
+            "training_loss":train_loss,
+            "train_accuracy":train_accuracy,
+            "test_loss":test_loss,
+            "test_accuracy":test_accuracy,
+            "learning_rate":optimizer.param_groups[0]['lr'],
+        }
+
+        mlflow.log_metrics(metrics, step=epoch)
 
 print('Finished Training')
 
-# save model
-torch.save(net.state_dict(), PATH)
+# save final model
+torch.save(net.state_dict(), PATH + '_final')

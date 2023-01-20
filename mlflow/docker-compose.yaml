@@ -11,4 +11,4 @@ services:
     volumes:
       - ../:/home/
       
-    command: bash -c "cd /home/ && pwd & mlflow server -p 8686 --host 0.0.0.0"
+    command: bash -c "cd /home/ & mlflow server -p 8686 --host 0.0.0.0"
