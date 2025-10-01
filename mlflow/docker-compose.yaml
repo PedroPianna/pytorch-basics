@@ -3,7 +3,6 @@ services:
   mlflow-server:
     container_name: 'mlflow'
     build: .
-    runtime: nvidia
     tty: true
     restart: unless-stopped
     ports:
